@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Windows Event ID · Attack Behavior Mapping</title>
+    <style>
+        /* ── reset & base ── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        :root {
+            --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'SF Mono', 'JetBrains Mono', 'Cascadia Code', monospace;
+            --radius: 12px;
+            --radius-sm: 6px;
+            --transition: 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08);
+            --color-bg: #f8f9fc;
+            --color-surface: #ffffff;
+            --color-border: #e2e6ed;
+            --color-border-light: #eef1f6;
+            --color-text: #1a1e2b;
+            --color-text-secondary: #5a6276;
+            --color-text-muted: #8e95a8;
+            --color-primary: #2a4c8a;
+            --color-primary-light: #e8edf8;
+            --color-info: #1a6d8a;
+            --color-info-bg: #e5f2f9;
+            --color-success: #1f7a5a;
+            --color-success-bg: #e3f3ec;
+            --color-warning: #8a6d1a;
+            --color-warning-bg: #f8f0e0;
+            --color-danger: #8a2a2a;
+            --color-danger-bg: #f8e6e6;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-bg: #0e111a;
+                --color-surface: #151b26;
+                --color-border: #2a3140;
+                --color-border-light: #1f2633;
+                --color-text: #e6edf5;
+                --color-text-secondary: #9aa4b8;
+                --color-text-muted: #6a7488;
+                --color-primary: #6a8fc9;
+                --color-primary-light: #1e2840;
+                --color-info: #5ab0d4;
+                --color-info-bg: #142a38;
+                --color-success: #6fc4a0;
+                --color-success-bg: #142f26;
+                --color-warning: #d4b85a;
+                --color-warning-bg: #3a3014;
+                --color-danger: #d46a6a;
+                --color-danger-bg: #3a1a1a;
+            }
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            padding: 1.5rem 1rem;
+        }
+
+        .wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: var(--color-surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem 1.25rem 2rem;
+            border: 0.5px solid var(--color-border);
+            transition: background var(--transition), border-color var(--transition);
+            animation: fadeUp 0.5s ease both;
+        }
+
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        /* ── header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .header h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            background: linear-gradient(135deg, var(--color-text), var(--color-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-badge {
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border: 0.5px solid var(--color-border);
+            white-space: nowrap;
+        }
+
+        /* ── search ── */
+        .search {
+            width: 100%;
+            padding: 0.65rem 1rem 0.65rem 2.6rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            color: var(--color-text);
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236a7488' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 0.9rem center;
+            background-size: 1rem;
+        }
+        .search:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+            background-color: var(--color-surface);
+        }
+        .search::placeholder {
+            color: var(--color-text-muted);
+        }
+
+        /* ── filters ── */
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 0.75rem 0 0.5rem;
+        }
+        .chip {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.9rem;
+            border-radius: 100px;
+            border: 0.5px solid var(--color-border);
+            background: var(--color-bg);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-weight: 500;
+            user-select: none;
+            box-shadow: var(--shadow-sm);
+        }
+        .chip:hover {
+            background: var(--color-border-light);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        .chip:active {
+            transform: scale(0.96);
+        }
+        .chip.active {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 25%, transparent);
+            transform: translateY(-1px);
+        }
+        .chip.active:hover {
+            box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        /* ── counter ── */
+        .count {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin: 0.5rem 0 0.75rem;
+            padding: 0.2rem 0;
+            transition: opacity var(--transition);
+        }
+        .count strong {
+            color: var(--color-text);
+            font-weight: 600;
+        }
+        .count .num {
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        /* ── table ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        thead tr {
+            border-bottom: 1px solid var(--color-border);
+        }
+        th {
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: var(--color-surface);
+            z-index: 2;
+            backdrop-filter: blur(4px);
+        }
+
+        tbody tr {
+            border-bottom: 0.5px solid var(--color-border-light);
+            cursor: pointer;
+            transition: background var(--transition), transform 0.15s ease;
+            animation: rowIn 0.35s ease both;
+        }
+        @keyframes rowIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-6px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        tbody tr:hover {
+            background: var(--color-bg);
+        }
+        tbody tr.expanded {
+            background: var(--color-bg);
+        }
+        tbody tr td {
+            padding: 0.6rem 0.75rem;
+            vertical-align: top;
+        }
+
+        .eid {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-text);
+            white-space: nowrap;
+            background: var(--color-bg);
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            border: 0.5px solid var(--color-border-light);
+            display: inline-block;
+        }
+        .log {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+        }
+        .evname {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            transition: color var(--transition);
+        }
+        tbody tr:hover .evname {
+            color: var(--color-primary);
+        }
+        .evdesc {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+
+        /* ── tags ── */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 2px;
+        }
+        .tag {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all var(--transition);
+            display: inline-block;
+        }
+        .tag:hover {
+            transform: scale(1.05) translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        .tag-auth {
+            background: #dde9fb;
+            color: #0c447c;
+        }
+        .tag-cred {
+            background: #f5e6e1;
+            color: #712b13;
+        }
+        .tag-privesc {
+            background: #f5e4e4;
+            color: #791f1f;
+        }
+        .tag-account {
+            background: #e8e4fe;
+            color: #3c3489;
+        }
+        .tag-exec {
+            background: #e6f0da;
+            color: #27500a;
+        }
+        .tag-persist {
+            background: #f5ecda;
+            color: #633806;
+        }
+        .tag-evade {
+            background: #f0e2ec;
+            color: #791f5a;
+        }
+        .tag-recon {
+            background: #f5e6ed;
+            color: #72243e;
+        }
+        .tag-lateral {
+            background: #ddf3ec;
+            color: #085041;
+        }
+        .tag-net {
+            background: #eeede6;
+            color: #444441;
+        }
+        @media (prefers-color-scheme: dark) {
+            .tag-auth {
+                background: #042c53;
+                color: #b5d4f4;
+            }
+            .tag-cred {
+                background: #4a1b0c;
+                color: #f0997b;
+            }
+            .tag-privesc {
+                background: #501313;
+                color: #f7c1c1;
+            }
+            .tag-account {
+                background: #26215c;
+                color: #cecbf6;
+            }
+            .tag-exec {
+                background: #173404;
+                color: #c0dd97;
+            }
+            .tag-persist {
+                background: #412402;
+                color: #fac775;
+            }
+            .tag-evade {
+                background: #421334;
+                color: #f4c0e4;
+            }
+            .tag-recon {
+                background: #4b1528;
+                color: #f4c0d1;
+            }
+            .tag-lateral {
+                background: #04342c;
+                color: #9fe1cb;
+            }
+            .tag-net {
+                background: #2c2c2a;
+                color: #b4b2a9;
+            }
+        }
+
+        .mitre {
+            font-size: 0.7rem;
+            font-family: var(--font-mono);
+            color: var(--color-text-secondary);
+            letter-spacing: 0.02em;
+        }
+        .mitre span {
+            display: inline-block;
+            transition: all var(--transition);
+            padding: 0.05rem 0.3rem;
+            border-radius: 3px;
+        }
+        .mitre span:hover {
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            transform: scale(1.04);
+        }
+
+        /* ── expand row ── */
+        .expand-row td {
+            padding: 0;
+            border-bottom: 0.5px solid var(--color-border-light);
+        }
+        .expand-content {
+            padding: 0.75rem 1rem 1rem 2.8rem;
+            background: var(--color-bg);
+            border-top: 1px solid var(--color-border-light);
+            animation: slideDown 0.3s ease both;
+            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+        }
+        @keyframes slideDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .expand-content h4 {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .expand-content h4::after {
+            content: '';
+            flex: 1;
+            height: 0.5px;
+            background: var(--color-border);
+        }
+        .behavior-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .bitem {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+            padding: 0.3rem 0.6rem 0.3rem 0.4rem;
+            border-radius: var(--radius-sm);
+            transition: background var(--transition);
+        }
+        .bitem:hover {
+            background: var(--color-surface);
+        }
+        .bitem-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            margin-top: 0.45rem;
+            flex-shrink: 0;
+            transition: transform var(--transition);
+        }
+        .bitem:hover .bitem-dot {
+            transform: scale(1.3);
+        }
+        .bitem-text {
+            font-size: 0.8rem;
+            color: var(--color-text);
+            line-height: 1.5;
+        }
+        .bitem-mitre {
+            font-size: 0.65rem;
+            font-family: var(--font-mono);
+            color: var(--color-primary);
+            margin-top: 0.1rem;
+            opacity: 0.8;
+            transition: opacity var(--transition);
+        }
+        .bitem:hover .bitem-mitre {
+            opacity: 1;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 2.5rem 1rem;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+        .empty span {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ── responsive ── */
+        @media (max-width: 700px) {
+            .wrap {
+                padding: 1rem 0.75rem;
+                border-radius: 8px;
+            }
+            table {
+                font-size: 0.75rem;
+            }
+            th,
+            td {
+                padding: 0.4rem 0.5rem;
+            }
+            .expand-content {
+                padding: 0.6rem 0.6rem 0.8rem 1.2rem;
+            }
+            .header h2 {
+                font-size: 1rem;
+            }
+            .header-badge {
+                font-size: 0.6rem;
+                padding: 0.15rem 0.6rem;
+            }
+            .search {
+                font-size: 0.8rem;
+                padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+                background-size: 0.85rem;
+                background-position: 0.7rem center;
+            }
+            .chip {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.6rem;
+            }
+            .evname {
+                font-size: 0.8rem;
+            }
+            .evdesc {
+                font-size: 0.7rem;
+            }
+            .mitre {
+                font-size: 0.6rem;
+            }
+            .bitem-text {
+                font-size: 0.75rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .wrap {
+                padding: 0.75rem 0.5rem;
+            }
+            th:nth-child(3),
+            td:nth-child(3) {
+                min-width: 80px;
+            }
+            th:nth-child(4),
+            td:nth-child(4) {
+                min-width: 60px;
+            }
+        }
+
+        /* ── scrollbar ── */
+        .wrap::-webkit-scrollbar {
+            width: 5px;
+        }
+        .wrap::-webkit-scrollbar-track {
+            background: var(--color-bg);
+        }
+        .wrap::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 10px;
+        }
+        .wrap::-webkit-scrollbar-thumb:hover {
+            background: var(--color-text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrap">
+        <div class="header">
+            <h2>🪟 Windows Event ID · Attack Mapping</h2>
+            <span class="header-badge">⚡ 46 event types</span>
+        </div>
+
+        <input class="search" id="q" placeholder="Tìm event ID, tên event, kỹ thuật MITRE, log channel…" oninput="render()" />
+
+        <div class="filters" id="filters"></div>
+
+        <div class="count" id="cnt"></div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Event ID</th>
+                    <th>Tên event</th>
+                    <th>Loại hành vi</th>
+                    <th>MITRE ATT&amp;CK</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const CAT_LABELS = {
+            auth: "Authentication",
+            cred: "Credential Access",
+            privesc: "Privilege Esc",
+            account: "Account Mgmt",
+            exec: "Execution",
+            persist: "Persistence",
+            evade: "Defense Evasion",
+            recon: "Discovery",
+            lateral: "Lateral Movement",
+            net: "Network"
+        };
+
+        const data = [{
+            id: 4624,
+            name: "Successful Logon",
+            log: "Security",
+            desc: "Một tài khoản đăng nhập thành công vào hệ thống",
+            cats: ["auth", "lateral"],
+            mitre: ["T1078", "T1021"],
+            behaviors: [
+                { text: "Logon Type 3 (Network) bất thường từ host không quen → lateral movement qua SMB", mitre: "T1021.002" },
+                { text: "Logon Type 9 (NewCredentials) → dấu hiệu Pass-the-Hash / runas /netonly", mitre: "T1550.002" },
+                { text: "Logon Type 10 (RemoteInteractive) → RDP từ IP lạ hoặc ngoài giờ", mitre: "T1021.001" },
+                { text: "Logon với tài khoản dịch vụ/máy ($) tương tác bất thường", mitre: "T1078.003" },
+                { text: "Authentication Package = NTLM trong môi trường Kerberos → PtH / downgrade", mitre: "T1550.002" },
+                { text: "Logon Type 8 (NetworkCleartext) → credential gửi dạng plaintext (IIS basic auth)", mitre: "T1078" },
+            ]
+        }, {
+            id: 4625,
+            name: "Failed Logon",
+            log: "Security",
+            desc: "Một lần đăng nhập thất bại",
+            cats: ["auth", "cred"],
+            mitre: ["T1110"],
+            behaviors: [
+                { text: "Nhiều 4625 cùng 1 user → Brute force password", mitre: "T1110.001" },
+                { text: "1 password thử trên nhiều user → Password spraying", mitre: "T1110.003" },
+                { text: "Sub Status 0xC000006A (sai password) vs 0xC0000064 (user không tồn tại) → user enumeration", mitre: "T1110" },
+                { text: "Logon Type 3 thất bại hàng loạt từ 1 IP → remote brute force qua SMB/WinRM", mitre: "T1110.001" },
+                { text: "Status 0xC0000234 (account locked) → vượt ngưỡng lockout", mitre: "T1110" },
+            ]
+        }, {
+            id: 4648,
+            name: "Logon Using Explicit Credentials",
+            log: "Security",
+            desc: "Đăng nhập với credential được chỉ định rõ ràng (runas)",
+            cats: ["cred", "lateral"],
+            mitre: ["T1078", "T1550"],
+            behaviors: [
+                { text: "RunAs / explicit cred để pivot sang tài khoản khác → privilege/lateral", mitre: "T1078" },
+                { text: "Pass-the-Hash dùng credential khác với user đang logon", mitre: "T1550.002" },
+                { text: "Tool (PsExec, wmic) chạy với cred được chỉ định để di chuyển ngang", mitre: "T1021.002" },
+            ]
+        }, {
+            id: 4634,
+            name: "Account Logoff",
+            log: "Security",
+            desc: "Tài khoản đăng xuất khỏi hệ thống",
+            cats: ["auth"],
+            mitre: ["T1078"],
+            behaviors: [
+                { text: "Dùng để dựng lại logon session timeline (ghép với 4624 LogonID)", mitre: "T1078" },
+                { text: "Session ngắn bất thường (logon → logoff vài giây) → automated tooling", mitre: "T1021" },
+            ]
+        }, {
+            id: 4672,
+            name: "Special Privileges Assigned",
+            log: "Security",
+            desc: "Quyền nhạy cảm được gán cho phiên logon mới",
+            cats: ["privesc", "auth"],
+            mitre: ["T1078.001", "T1134"],
+            behaviors: [
+                { text: "Logon admin (SeDebugPrivilege, SeTcbPrivilege) → phiên đặc quyền cao", mitre: "T1078.001" },
+                { text: "Tài khoản thường bất ngờ nhận quyền admin → privilege escalation", mitre: "T1134" },
+                { text: "Theo dõi logon của Domain Admin trên endpoint không nên dùng", mitre: "T1078.002" },
+            ]
+        }, {
+            id: 4673,
+            name: "Sensitive Privilege Use",
+            log: "Security",
+            desc: "Một dịch vụ/quyền nhạy cảm được gọi",
+            cats: ["privesc", "evade"],
+            mitre: ["T1134"],
+            behaviors: [
+                { text: "SeDebugPrivilege được dùng → công cụ dump LSASS (Mimikatz)", mitre: "T1003.001" },
+                { text: "SeBackupPrivilege/SeRestorePrivilege → đọc file nhạy cảm bypass ACL (NTDS.dit)", mitre: "T1003.003" },
+                { text: "SeLoadDriverPrivilege → load driver độc hại (BYOVD)", mitre: "T1543.003" },
+            ]
+        }, {
+            id: 4688,
+            name: "Process Creation",
+            log: "Security",
+            desc: "Một tiến trình mới được tạo (kèm CommandLine nếu bật)",
+            cats: ["exec", "evade"],
+            mitre: ["T1059", "T1106"],
+            behaviors: [
+                { text: "Parent-child bất thường: winword.exe → cmd.exe/powershell.exe", mitre: "T1566.001" },
+                { text: "LOLBins: certutil, bitsadmin, mshta, regsvr32, rundll32 trong CommandLine", mitre: "T1218" },
+                { text: "PowerShell với -EncodedCommand, -nop, IEX, DownloadString", mitre: "T1059.001" },
+                { text: "Process chạy từ %TEMP%, %APPDATA%, Public → dropper", mitre: "T1059" },
+                { text: "Token-stolen process: NewProcess có Token Elevation bất thường", mitre: "T1134.001" },
+            ]
+        }, {
+            id: 4689,
+            name: "Process Termination",
+            log: "Security",
+            desc: "Một tiến trình kết thúc",
+            cats: ["evade"],
+            mitre: ["T1070"],
+            behaviors: [
+                { text: "Process security/AV bị kết thúc → defense evasion", mitre: "T1562.001" },
+                { text: "Process sống rất ngắn rồi chết → injection/launcher", mitre: "T1055" },
+            ]
+        }, {
+            id: 4697,
+            name: "Service Installed (Security)",
+            log: "Security",
+            desc: "Một dịch vụ mới được cài đặt (audit)",
+            cats: ["persist", "privesc"],
+            mitre: ["T1543.003"],
+            behaviors: [
+                { text: "Service trỏ tới binary lạ ở %TEMP% → persistence", mitre: "T1543.003" },
+                { text: "PsExec/PSEXESVC, Cobalt Strike service → remote execution", mitre: "T1569.002" },
+                { text: "ServiceFileName chứa cmd /c, powershell, rundll32 → exec qua SCM", mitre: "T1569.002" },
+                { text: "Service name ngẫu nhiên 8 ký tự (Cobalt Strike default)", mitre: "T1543.003" },
+            ]
+        }, {
+            id: 7045,
+            name: "Service Installed (System)",
+            log: "System",
+            desc: "SCM ghi nhận dịch vụ mới (kernel/usermode)",
+            cats: ["persist", "exec"],
+            mitre: ["T1543.003", "T1569.002"],
+            behaviors: [
+                { text: "PsExec để lại PSEXESVC → remote admin/lateral", mitre: "T1569.002" },
+                { text: "Cobalt Strike/Metasploit tạo service tên ngẫu nhiên để chạy payload", mitre: "T1543.003" },
+                { text: "Driver service (Type=kernel) không ký → BYOVD kill EDR", mitre: "T1562.001" },
+                { text: "ImagePath chứa %COMSPEC%/powershell encoded → fileless service", mitre: "T1059.001" },
+            ]
+        }, {
+            id: 7036,
+            name: "Service State Changed",
+            log: "System",
+            desc: "Dịch vụ chuyển trạng thái running/stopped",
+            cats: ["evade"],
+            mitre: ["T1562.001"],
+            behaviors: [
+                { text: "Windows Defender / EventLog / Sysmon service bị stop → disable monitoring", mitre: "T1562.001" },
+                { text: "Stop dịch vụ backup/SQL trước khi mã hóa (ransomware)", mitre: "T1489" },
+            ]
+        }, {
+            id: 7040,
+            name: "Service Start Type Changed",
+            log: "System",
+            desc: "Start type của dịch vụ bị thay đổi",
+            cats: ["evade", "persist"],
+            mitre: ["T1562.001"],
+            behaviors: [
+                { text: "Đặt Windows Defender / WinDefend = Disabled", mitre: "T1562.001" },
+                { text: "Đặt service độc hại = Auto Start để persistence", mitre: "T1543.003" },
+            ]
+        }, {
+            id: 4698,
+            name: "Scheduled Task Created",
+            log: "Security",
+            desc: "Một scheduled task được tạo",
+            cats: ["persist", "exec"],
+            mitre: ["T1053.005"],
+            behaviors: [
+                { text: "Task chạy payload lúc logon/boot/idle → persistence", mitre: "T1053.005" },
+                { text: "schtasks /create từ xa (RPC) → lateral movement", mitre: "T1053.005" },
+                { text: "Task Action gọi powershell/mshta/rundll32 với arg mã hóa", mitre: "T1059.001" },
+                { text: "Task tên giả mạo task hệ thống (GoogleUpdate, OneDrive)", mitre: "T1036.004" },
+            ]
+        }, {
+            id: 4699,
+            name: "Scheduled Task Deleted",
+            log: "Security",
+            desc: "Một scheduled task bị xóa",
+            cats: ["evade"],
+            mitre: ["T1070"],
+            behaviors: [
+                { text: "Xóa task sau khi thực thi để xóa dấu vết", mitre: "T1070.009" },
+            ]
+        }, {
+            id: 4702,
+            name: "Scheduled Task Updated",
+            log: "Security",
+            desc: "Một scheduled task được cập nhật",
+            cats: ["persist", "evade"],
+            mitre: ["T1053.005"],
+            behaviors: [
+                { text: "Sửa task hợp lệ để chèn action độc hại (hijack)", mitre: "T1053.005" },
+            ]
+        }, {
+            id: 4720,
+            name: "User Account Created",
+            log: "Security",
+            desc: "Một tài khoản người dùng mới được tạo",
+            cats: ["account", "persist"],
+            mitre: ["T1136.001"],
+            behaviors: [
+                { text: "Tạo tài khoản backdoor để duy trì truy cập", mitre: "T1136.001" },
+                { text: "Tên giả mạo gần giống tài khoản hệ thống (admin1, support$)", mitre: "T1136.001" },
+                { text: "Tạo local account trên nhiều host → spread persistence", mitre: "T1136.001" },
+            ]
+        }, {
+            id: 4722,
+            name: "User Account Enabled",
+            log: "Security",
+            desc: "Một tài khoản bị vô hiệu được bật lại",
+            cats: ["account", "persist"],
+            mitre: ["T1098"],
+            behaviors: [
+                { text: "Kích hoạt lại tài khoản cũ/disabled (Guest, krbtgt) để dùng", mitre: "T1098" },
+            ]
+        }, {
+            id: 4724,
+            name: "Password Reset Attempt",
+            log: "Security",
+            desc: "Có nỗ lực reset mật khẩu của tài khoản",
+            cats: ["cred", "persist"],
+            mitre: ["T1098"],
+            behaviors: [
+                { text: "Reset password admin để chiếm quyền tài khoản (account manipulation)", mitre: "T1098" },
+                { text: "Reset password hàng loạt sau khi chiếm DC", mitre: "T1098" },
+            ]
+        }, {
+            id: 4725,
+            name: "User Account Disabled",
+            log: "Security",
+            desc: "Một tài khoản bị vô hiệu hóa",
+            cats: ["evade", "account"],
+            mitre: ["T1531"],
+            behaviors: [
+                { text: "Vô hiệu hóa tài khoản admin/IT để cản trở ứng cứu", mitre: "T1531" },
+            ]
+        }, {
+            id: 4726,
+            name: "User Account Deleted",
+            log: "Security",
+            desc: "Một tài khoản người dùng bị xóa",
+            cats: ["evade", "account"],
+            mitre: ["T1531", "T1070"],
+            behaviors: [
+                { text: "Xóa tài khoản backdoor để xóa dấu vết sau chiến dịch", mitre: "T1070" },
+                { text: "Xóa tài khoản nạn nhân để gây gián đoạn (impact)", mitre: "T1531" },
+            ]
+        }, {
+            id: 4728,
+            name: "Member Added to Global Group",
+            log: "Security",
+            desc: "Thành viên được thêm vào nhóm bảo mật toàn cục",
+            cats: ["privesc", "persist"],
+            mitre: ["T1098", "T1078.002"],
+            behaviors: [
+                { text: "Thêm user vào Domain Admins / Enterprise Admins", mitre: "T1098" },
+                { text: "Thêm tài khoản backdoor vào nhóm đặc quyền AD", mitre: "T1078.002" },
+            ]
+        }, {
+            id: 4732,
+            name: "Member Added to Local Group",
+            log: "Security",
+            desc: "Thành viên được thêm vào nhóm cục bộ",
+            cats: ["privesc", "persist"],
+            mitre: ["T1098"],
+            behaviors: [
+                { text: "Thêm user vào Administrators cục bộ → local privesc", mitre: "T1098" },
+                { text: "Thêm vào Remote Desktop Users để giữ truy cập RDP", mitre: "T1021.001" },
+            ]
+        }, {
+            id: 4756,
+            name: "Member Added to Universal Group",
+            log: "Security",
+            desc: "Thành viên được thêm vào nhóm bảo mật universal",
+            cats: ["privesc", "persist"],
+            mitre: ["T1098"],
+            behaviors: [
+                { text: "Thêm vào nhóm đặc quyền cross-domain (Enterprise Admins)", mitre: "T1098" },
+            ]
+        }, {
+            id: 4738,
+            name: "User Account Changed",
+            log: "Security",
+            desc: "Thuộc tính tài khoản người dùng bị thay đổi",
+            cats: ["account", "persist"],
+            mitre: ["T1098"],
+            behaviors: [
+                { text: "Bật 'Password never expires' / 'Store password reversible' cho backdoor", mitre: "T1098" },
+                { text: "Đặt SPN cho user account → tạo điều kiện Kerberoast (targeted)", mitre: "T1558.003" },
+                { text: "Tắt 'Kerberos pre-auth' → cho phép AS-REP Roasting", mitre: "T1558.004" },
+            ]
+        }, {
+            id: 4740,
+            name: "Account Locked Out",
+            log: "Security",
+            desc: "Một tài khoản bị khóa do vượt ngưỡng sai mật khẩu",
+            cats: ["auth", "cred"],
+            mitre: ["T1110"],
+            behaviors: [
+                { text: "Lockout hàng loạt → brute force / password spray đang diễn ra", mitre: "T1110.003" },
+                { text: "Caller Computer Name lạ → nguồn tấn công credential", mitre: "T1110" },
+            ]
+        }, {
+            id: 4768,
+            name: "Kerberos TGT Requested (AS-REQ)",
+            log: "Security (DC)",
+            desc: "Yêu cầu cấp vé TGT từ KDC",
+            cats: ["cred", "auth"],
+            mitre: ["T1558"],
+            behaviors: [
+                { text: "TGT request với encryption type yếu (0x17 RC4) → downgrade / roasting", mitre: "T1558.003" },
+                { text: "Nhiều TGT cho user không pre-auth → AS-REP Roasting", mitre: "T1558.004" },
+                { text: "Golden Ticket: TGT bất thường (lifetime dài, user không tồn tại)", mitre: "T1558.001" },
+            ]
+        }, {
+            id: 4769,
+            name: "Kerberos Service Ticket Requested (TGS-REQ)",
+            log: "Security (DC)",
+            desc: "Yêu cầu vé dịch vụ (TGS) cho một SPN",
+            cats: ["cred", "lateral"],
+            mitre: ["T1558.003"],
+            behaviors: [
+                { text: "Nhiều TGS request cho nhiều SPN từ 1 user → Kerberoasting", mitre: "T1558.003" },
+                { text: "Ticket Encryption 0x17 (RC4) → vé dễ crack offline", mitre: "T1558.003" },
+                { text: "Silver Ticket: TGS dùng dịch vụ mà không có TGT tương ứng (4768)", mitre: "T1558.002" },
+            ]
+        }, {
+            id: 4771,
+            name: "Kerberos Pre-Auth Failed",
+            log: "Security (DC)",
+            desc: "Xác thực Kerberos thất bại ở bước pre-auth",
+            cats: ["cred", "auth"],
+            mitre: ["T1110", "T1558.004"],
+            behaviors: [
+                { text: "Failure Code 0x18 (sai password) hàng loạt → brute force qua Kerberos", mitre: "T1110.001" },
+                { text: "Code 0x12 (account disabled/locked) → spray dò tài khoản", mitre: "T1110.003" },
+            ]
+        }, {
+            id: 4776,
+            name: "NTLM Authentication",
+            log: "Security",
+            desc: "DC xác thực credential qua NTLM",
+            cats: ["auth", "cred"],
+            mitre: ["T1110", "T1550.002"],
+            behaviors: [
+                { text: "Error 0xC0000064/0xC000006A hàng loạt → NTLM brute/spray", mitre: "T1110.003" },
+                { text: "NTLM auth từ host bất thường → Pass-the-Hash", mitre: "T1550.002" },
+                { text: "NTLM relay: auth nguồn-đích không khớp pattern bình thường", mitre: "T1557.001" },
+            ]
+        }, {
+            id: 4719,
+            name: "Audit Policy Changed",
+            log: "Security",
+            desc: "Chính sách audit hệ thống bị thay đổi",
+            cats: ["evade"],
+            mitre: ["T1562.002"],
+            behaviors: [
+                { text: "Tắt subcategory audit (Logon, Process) để giảm log", mitre: "T1562.002" },
+                { text: "auditpol /clear hoặc /set tắt logging trước khi tấn công", mitre: "T1562.002" },
+            ]
+        }, {
+            id: 1102,
+            name: "Audit Log Cleared",
+            log: "Security",
+            desc: "Security event log bị xóa",
+            cats: ["evade"],
+            mitre: ["T1070.001"],
+            behaviors: [
+                { text: "Xóa Security log để phá timeline điều tra", mitre: "T1070.001" },
+                { text: "wevtutil cl Security / Clear-EventLog sau khi đạt mục tiêu", mitre: "T1070.001" },
+            ]
+        }, {
+            id: 104,
+            name: "Event Log Cleared",
+            log: "System",
+            desc: "Một event log (System/App) bị xóa",
+            cats: ["evade"],
+            mitre: ["T1070.001"],
+            behaviors: [
+                { text: "Xóa System/Application/PowerShell log để che dấu hành vi", mitre: "T1070.001" },
+            ]
+        }, {
+            id: 4616,
+            name: "System Time Changed",
+            log: "Security",
+            desc: "Thời gian hệ thống bị thay đổi",
+            cats: ["evade"],
+            mitre: ["T1070.006"],
+            behaviors: [
+                { text: "Đổi giờ hệ thống để làm sai lệch timestamp log (timestomp gián tiếp)", mitre: "T1070.006" },
+            ]
+        }, {
+            id: 4657,
+            name: "Registry Value Modified",
+            log: "Security",
+            desc: "Một giá trị registry được sửa (cần bật audit)",
+            cats: ["persist", "evade"],
+            mitre: ["T1112", "T1547.001"],
+            behaviors: [
+                { text: "Ghi vào Run/RunOnce key để persistence", mitre: "T1547.001" },
+                { text: "Tắt Defender qua registry (DisableRealTimeMonitoring)", mitre: "T1562.001" },
+                { text: "Sửa UAC (EnableLUA=0) / LocalAccountTokenFilterPolicy=1", mitre: "T1112" },
+            ]
+        }, {
+            id: 5140,
+            name: "Network Share Accessed",
+            log: "Security",
+            desc: "Một network share được truy cập",
+            cats: ["lateral", "recon"],
+            mitre: ["T1021.002"],
+            behaviors: [
+                { text: "Truy cập ADMIN$ / C$ từ xa → PsExec / lateral movement", mitre: "T1021.002" },
+                { text: "Liệt kê / truy cập SYSVOL để tìm GPP password", mitre: "T1552.006" },
+            ]
+        }, {
+            id: 5145,
+            name: "Network Share Detailed Access",
+            log: "Security",
+            desc: "Truy cập chi tiết tới file trên share (RelativeTargetName)",
+            cats: ["lateral", "cred"],
+            mitre: ["T1021.002", "T1003"],
+            behaviors: [
+                { text: "Truy cập ADMIN$\\PSEXESVC.exe → PsExec lateral", mitre: "T1021.002" },
+                { text: "Đọc \\IPC$ với pipe lsarpc/samr/svcctl → remote exec / DCSync", mitre: "T1003.006" },
+                { text: "Truy cập NTDS.dit / SYSTEM hive qua share → credential theft", mitre: "T1003.003" },
+            ]
+        }, {
+            id: 4662,
+            name: "Operation on AD Object",
+            log: "Security (DC)",
+            desc: "Thao tác trên đối tượng Active Directory",
+            cats: ["cred", "recon"],
+            mitre: ["T1003.006"],
+            behaviors: [
+                { text: "Replication GUID (DS-Replication-Get-Changes) → DCSync attack", mitre: "T1003.006" },
+                { text: "Đọc thuộc tính nhạy cảm hàng loạt → AD recon (BloodHound)", mitre: "T1087.002" },
+            ]
+        }, {
+            id: 4798,
+            name: "User's Local Group Enumerated",
+            log: "Security",
+            desc: "Thành viên nhóm cục bộ của một user được liệt kê",
+            cats: ["recon"],
+            mitre: ["T1069.001", "T1087.001"],
+            behaviors: [
+                { text: "BloodHound / net localgroup enumerate → discovery", mitre: "T1069.001" },
+            ]
+        }, {
+            id: 4799,
+            name: "Local Group Membership Enumerated",
+            log: "Security",
+            desc: "Thành viên của một nhóm bảo mật cục bộ được liệt kê",
+            cats: ["recon"],
+            mitre: ["T1069.001"],
+            behaviors: [
+                { text: "Enumerate Administrators group → tìm đường privesc/lateral", mitre: "T1069.001" },
+                { text: "SharpHound thu thập group membership hàng loạt", mitre: "T1087.001" },
+            ]
+        }, {
+            id: 4778,
+            name: "RDP Session Reconnected",
+            log: "Security",
+            desc: "Một phiên RDP được kết nối lại",
+            cats: ["lateral"],
+            mitre: ["T1021.001"],
+            behaviors: [
+                { text: "Reconnect RDP từ IP/host lạ → lateral movement qua RDP", mitre: "T1021.001" },
+            ]
+        }, {
+            id: 4104,
+            name: "PowerShell Script Block Logging",
+            log: "PowerShell/Operational",
+            desc: "Nội dung script block PowerShell được thực thi",
+            cats: ["exec", "evade"],
+            mitre: ["T1059.001"],
+            behaviors: [
+                { text: "IEX (New-Object Net.WebClient).DownloadString → tải payload", mitre: "T1059.001" },
+                { text: "FromBase64String / -EncodedCommand → obfuscation", mitre: "T1027" },
+                { text: "Invoke-Mimikatz, Invoke-Kerberoast, PowerView → tooling", mitre: "T1003.001" },
+                { text: "AMSI bypass: [Ref].Assembly...amsiInitFailed", mitre: "T1562.001" },
+                { text: "Reflection.Assembly::Load → load .NET assembly in-memory", mitre: "T1620" },
+            ]
+        }, {
+            id: 4103,
+            name: "PowerShell Module/Pipeline Logging",
+            log: "PowerShell/Operational",
+            desc: "Chi tiết pipeline execution của PowerShell",
+            cats: ["exec"],
+            mitre: ["T1059.001"],
+            behaviors: [
+                { text: "Ghi lại cmdlet và tham số → phát hiện tooling bị obfuscate ở 4104", mitre: "T1059.001" },
+            ]
+        }, {
+            id: 8004,
+            name: "AppLocker Block / Audit (EXE/DLL)",
+            log: "AppLocker",
+            desc: "AppLocker chặn hoặc audit thực thi file",
+            cats: ["exec", "evade"],
+            mitre: ["T1059", "T1218"],
+            behaviors: [
+                { text: "Cố chạy binary không nằm trong allowlist → execution attempt", mitre: "T1204.002" },
+                { text: "LOLBin chạy từ thư mục user-writable bị block", mitre: "T1218" },
+            ]
+        }, {
+            id: 5861,
+            name: "WMI Permanent Event Subscription",
+            log: "WMI-Activity/Operational",
+            desc: "Một WMI event consumer binding được tạo",
+            cats: ["persist", "exec"],
+            mitre: ["T1546.003"],
+            behaviors: [
+                { text: "CommandLineEventConsumer + __EventFilter → fileless persistence", mitre: "T1546.003" },
+                { text: "Trigger payload khi boot/logon/thời gian qua WMI repository", mitre: "T1546.003" },
+            ]
+        }, {
+            id: 5156,
+            name: "WFP Connection Allowed",
+            log: "Security",
+            desc: "Windows Filtering Platform cho phép một kết nối",
+            cats: ["net", "lateral"],
+            mitre: ["T1071"],
+            behaviors: [
+                { text: "Process không phải browser kết nối ra ngoài → C2 beaconing", mitre: "T1071.001" },
+                { text: "Kết nối nội bộ tới port SMB/WinRM/RDP từ host lạ → lateral", mitre: "T1021" },
+            ]
+        }, {
+            id: 1149,
+            name: "RDP Authentication Succeeded",
+            log: "TerminalServices-RDPClient / RemoteConnectionManager",
+            desc: "Xác thực RDP thành công (network-level)",
+            cats: ["lateral", "auth"],
+            mitre: ["T1021.001"],
+            behaviors: [
+                { text: "Kết nối RDP thành công từ IP nguồn lạ → lateral movement", mitre: "T1021.001" },
+                { text: "Ghép với 4624 Type 10 để xác nhận phiên RDP tương tác", mitre: "T1021.001" },
+            ]
+        }, ];
+
+        let activecat = "all";
+        let expandId = null;
+
+        function render() {
+            const q = (document.getElementById("q").value || "").toLowerCase().trim();
+            const rows = data.filter(d => {
+                const matchCat = activecat === "all" || d.cats.includes(activecat);
+                const matchQ = !q ||
+                    String(d.id).includes(q) ||
+                    ("event " + d.id).includes(q) ||
+                    d.name.toLowerCase().includes(q) ||
+                    d.desc.toLowerCase().includes(q) ||
+                    d.log.toLowerCase().includes(q) ||
+                    d.cats.some(c => CAT_LABELS[c].toLowerCase().includes(q)) ||
+                    d.mitre.some(m => m.toLowerCase().includes(q)) ||
+                    d.behaviors.some(b => b.text.toLowerCase().includes(q) || b.mitre.toLowerCase().includes(q));
+                return matchCat && matchQ;
+            });
+
+            const cnt = document.getElementById("cnt");
+            const total = data.length;
+            cnt.innerHTML =
+                `<span class="num">${rows.length}</span> / ${total} events <span style="opacity:0.5;margin-left:0.5rem;">·</span> ${Math.round(rows.length/total*100)}%`;
+
+            const tb = document.getElementById("tbody");
+            tb.innerHTML = "";
+
+            if (rows.length === 0) {
+                tb.innerHTML =
+                    `<tr><td colspan="4"><div class="empty"><span>🔍</span>Không tìm thấy event phù hợp</div></td></tr>`;
+                return;
+            }
+
+            rows.forEach((d, idx) => {
+                const tr = document.createElement("tr");
+                tr.dataset.id = d.id;
+                tr.style.animationDelay = (idx * 25) + "ms";
+
+                const mitreHtml = d.mitre.map(m => `<span>${m}</span>`).join(", ");
+
+                tr.innerHTML = `
+              <td><span class="eid">${d.id}</span><span class="log">${d.log}</span></td>
+              <td><div class="evname">${d.name}</div><div class="evdesc">${d.desc}</div></td>
+              <td><div class="tags">${d.cats.map(c => `<span class="tag tag-${c}">${CAT_LABELS[c]}</span>`).join("")}</div></td>
+              <td class="mitre">${mitreHtml}</td>
+            `;
+
+                tr.onclick = () => toggleExpand(d, tr);
+                tb.appendChild(tr);
+            });
+
+            if (expandId !== null) {
+                const target = data.find(d => d.id === expandId);
+                if (target) {
+                    const tr = tb.querySelector(`tr[data-id="${expandId}"]`);
+                    if (tr) toggleExpand(target, tr);
+                }
+            }
+        }
+
+        function toggleExpand(d, tr) {
+            const existing = document.getElementById("exp-" + d.id);
+            if (existing) {
+                existing.remove();
+                tr.classList.remove("expanded");
+                if (expandId === d.id) expandId = null;
+                return;
+            }
+
+            document.querySelectorAll(".expand-row").forEach(r => r.remove());
+            document.querySelectorAll("tbody tr.expanded").forEach(r => r.classList.remove("expanded"));
+
+            tr.classList.add("expanded");
+            expandId = d.id;
+
+            const er = document.createElement("tr");
+            er.className = "expand-row";
+            er.id = "exp-" + d.id;
+            er.style.animationDelay = "0ms";
+            er.innerHTML = `
+            <td colspan="4">
+              <div class="expand-content">
+                <h4>Attack behaviors — Event ${d.id}: ${d.name} · ${d.log}</h4>
+                <div class="behavior-list">
+                  ${d.behaviors.map(b => `
+                    <div class="bitem">
+                      <div class="bitem-dot"></div>
+                      <div>
+                        <div class="bitem-text">${b.text}</div>
+                        <div class="bitem-mitre">${b.mitre}</div>
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            </td>
+          `;
+            tr.after(er);
+        }
+
+        const fc = document.getElementById("filters");
+        const allChip = document.createElement("button");
+        allChip.className = "chip active";
+        allChip.textContent = "Tất cả";
+        allChip.onclick = () => {
+            activecat = "all";
+            document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+            allChip.classList.add("active");
+            render();
+        };
+        fc.appendChild(allChip);
+
+        Object.entries(CAT_LABELS).forEach(([k, v]) => {
+            const c = document.createElement("button");
+            c.className = "chip";
+            c.textContent = v;
+            c.onclick = () => {
+                activecat = k;
+                document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+                c.classList.add("active");
+                render();
+            };
+            fc.appendChild(c);
+        });
+
+        render();
+    </script>
+
+</body>
+</html>
